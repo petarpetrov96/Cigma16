@@ -33,7 +33,9 @@ char Assembler017::getRX(char *instrName) {
 }
 
 char Assembler017::getJump(char *instrName) {
-    return '0';
+    if(!strcmp(instrName,"jump"))
+        return '0';
+    return ' ';
 }
 
 int Assembler017::getInstructionType(char *instrName) {

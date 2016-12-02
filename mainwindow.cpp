@@ -128,29 +128,29 @@ void MainWindow::toggleSigma() {
 }
 
 void MainWindow::toggleSpeed() {
-    if(ui->actionSlow->isChecked() && speed!=0) {
+    if(ui->actionSlow->isChecked() && speed!=SPEED_SLOW) {
         timer->setInterval(1000);
-        speed=0;
+        speed=SPEED_SLOW;
         uienabled=true;
     }
-    else if(ui->actionMedium->isChecked() && speed!=1) {
+    else if(ui->actionMedium->isChecked() && speed!=SPEED_MEDIUM) {
         timer->setInterval(250);
-        speed=1;
+        speed=SPEED_MEDIUM;
         uienabled=true;
     }
-    else if(ui->actionFast->isChecked() && speed!=2) {
+    else if(ui->actionFast->isChecked() && speed!=SPEED_FAST) {
         timer->setInterval(50);
-        speed=2;
+        speed=SPEED_FAST;
         uienabled=true;
     }
-    else if(ui->actionRealtime->isChecked() && speed!=3) {
+    else if(ui->actionRealtime->isChecked() && speed!=SPEED_REALTIME) {
         timer->setInterval(0);
-        speed=3;
+        speed=SPEED_REALTIME;
         uienabled=true;
     }
-    else if(ui->actionNo_UI->isChecked() && speed!=4) {
+    else if(ui->actionNo_UI->isChecked() && speed!=SPEED_NOUI) {
         timer->setInterval(0);
-        speed=4;
+        speed=SPEED_NOUI;
         uienabled=false;
     }
 }

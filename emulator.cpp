@@ -14,21 +14,28 @@ int Emulator::isMemoryAddressModified() {
 }
 
 void Emulator::reset() {
+    //resetting the pc/ir/adr/dat registers
     pc=0;
     ir=0;
     adr=0;
     dat=0;
+    //resetting the registers and memory
     memset(registers,0,16*sizeof(short));
     memset(memory,0,65536*4*sizeof(char));
+    //setting the modified tag of the memory
     modified=1;
     modifiedAddress=0;
+    //resetting selections
     leftAffectedBegin=0;
     leftAffectedEnd=0;
     rightAffectedBegin=0;
     rightAffectedEnd=0;
+    //resetting the halted/paused flags
     halted=false;
     paused=false;
+    //resetting the exectutedInstructions
     executedInstructions=0;
+    //resetting all strings
     lastEffect="";
     lastOperands="";
     lastOperation="";

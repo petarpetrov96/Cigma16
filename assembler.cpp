@@ -377,7 +377,7 @@ void Assembler::printError(int result,int lineError,char* fp) {
     if(result==5) sprintf(fp,"Memory address not found - line %d!\n",lineError);
 }
 
-bool Assembler::translateInstruction(char *instrName, int instrLength, char *instrArgs, int instrArgsLength, char *fp, int lineError) {
+bool Assembler::translateInstruction(char *instrName, char *instrArgs, int instrArgsLength, char *fp, int lineError) {
     int t=getInstructionType(instrName);
     int result;
     if(t==1) {
@@ -597,7 +597,7 @@ void Assembler::assemble() {
             error=1;
             break;
         }
-        if(!translateInstruction(instrName,instrLength,instrArgs,instrArgsLength,fp,lines[i])) {
+        if(!translateInstruction(instrName,instrArgs,instrArgsLength,fp,lines[i])) {
             error=1;
             break;
         }
