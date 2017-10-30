@@ -37,6 +37,7 @@ int main(int argc, char* argv[]) {
 	inputFile[0]='\0';
 	char outputFile[1024];
 	outputFile[0]='\0';
+	char dumpFile[1024];
 	char* version=(char*)"017";
 	int currArg=1;
 	while(currArg<argc) {
@@ -73,6 +74,8 @@ int main(int argc, char* argv[]) {
 		strcpy(outputFile,inputFile);
 		strcat(outputFile,".trace");
 	}
+	strcpy(dumpFile,inputFile);
+	strcat(dumpFile,".dump");
 	if(strcmp(version,"017") && strcmp(version,"144")) {
 		fprintf(stderr,"Usage: c16emu input.asm [-o output.trace -v [017/144]]\n");
 		return -1;
@@ -86,6 +89,13 @@ int main(int argc, char* argv[]) {
 	if(output==NULL) {
 		fprintf(stderr,"Could not open %s\n",outputFile);
 		fclose(input);
+		return -1;
+	}
+	FILE* dump=fopen(dumpFile,"w");
+	if(dump==NULL) {
+		fprintf(stderr,"Could not open %s\n",dumpFile);
+		fclose(input);
+		fclose(output);
 		return -1;
 	}
 	char* buffer=new char[10485760];
@@ -110,5 +120,10 @@ int main(int argc, char* argv[]) {
 				break;
 		}
 	}
+	fprintf(dump,"Register File:\n%s\n",emulator.getRegisterFile().c_str());
+	fprintf(dump,"Memory File:\n%s\n",emulator.getMemoryFile().c_str());
+	fclose(input);
+	fclose(output);
+	fclose(dump);
 	return 0;
 }
