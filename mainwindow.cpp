@@ -56,7 +56,7 @@ MainWindow::MainWindow(QWidget *parent) :
     timer=new QTimer(this);
     timer->setInterval(100);
     timer->connect(timer,SIGNAL(timeout()),this,SLOT(timerRunEmulator()));
-    ui->instructionList->setPlainText(emulator.getInstructionList(architecture));
+    ui->instructionList->setPlainText(emulator.getInstructionList(architecture).c_str());
 }
 
 void MainWindow::toggleTheme() {
@@ -124,7 +124,7 @@ void MainWindow::toggleSigma() {
     else if(ui->actionSigma16_1_4_4->isChecked() && architecture!=ARCHITECTURE_SIGMA16_1_4_4)
         architecture=ARCHITECTURE_SIGMA16_1_4_4;
     resetEmulator();
-    ui->instructionList->setPlainText(emulator.getInstructionList(architecture));
+    ui->instructionList->setPlainText(emulator.getInstructionList(architecture).c_str());
 }
 
 void MainWindow::toggleSpeed() {
@@ -163,12 +163,12 @@ void MainWindow::assemble() {
     if(architecture==ARCHITECTURE_SIGMA16_0_1_7) {
         Assembler017 assembler(data,strlen(data));
         assembler.assemble();
-        rawAssembly=assembler.readAssembly();
+        rawAssembly=QString(assembler.readAssembly().c_str());
     }
     else {
         Assembler144 assembler(data,strlen(data));
         assembler.assemble();
-        rawAssembly=assembler.readAssembly();
+        rawAssembly=QString(assembler.readAssembly().c_str());
     }
     QString test(rawAssembly);
     if(test.left(5).compare("ASM02")!=0) {
@@ -214,7 +214,7 @@ void MainWindow::assemble() {
 }
 
 void MainWindow::updateEmulator() {
-    QString output=emulator.getOutput();
+    QString output=emulator.getOutput().c_str();
     if(output!="") {
         ui->inputOutput->moveCursor(QTextCursor::End);
         if(architecture==ARCHITECTURE_SIGMA16_0_1_7)
@@ -233,10 +233,10 @@ void MainWindow::updateEmulator() {
     sprintf(temp,"%04hx",emulator.dat);
     ui->registerDAT->setText(QString(temp));
     ui->registerFile->clear();
-    ui->registerFile->appendPlainText(emulator.getRegisterFile());
+    ui->registerFile->appendPlainText(emulator.getRegisterFile().c_str());
     if(emulator.isMemoryModified()) {
         setUpdatesEnabled(false);
-        QString memoryFile=emulator.getMemoryFile();
+        QString memoryFile=emulator.getMemoryFile().c_str();
         ui->memoryFileLeft->setPlainText(memoryFile);
         QTextCursor cursorLeft(ui->memoryFileLeft->document());
         cursorLeft.select(QTextCursor::Document);
@@ -253,7 +253,7 @@ void MainWindow::updateEmulator() {
     }
     if(emulator.isMemoryAddressModified()!=-1) {
         int address=emulator.isMemoryAddressModified();
-        QString memoryAddress=emulator.getMemoryAddress(address);
+        QString memoryAddress=emulator.getMemoryAddress(address).c_str();
         QTextCursor cursorLeft(ui->memoryFileLeft->document());
         cursorLeft.setPosition(address*11,QTextCursor::MoveAnchor);
         cursorLeft.setPosition((address+1)*11,QTextCursor::KeepAnchor);
@@ -275,10 +275,10 @@ void MainWindow::updateEmulator() {
     cursorRight.setCharFormat(blue);
     oldLeft=cursorLeft;
     oldRight=cursorRight;
-    ui->emOperation->setText(emulator.lastOperation);
-    ui->emOperands->setText(emulator.lastOperands);
-    ui->emType->setText(emulator.lastType);
-    ui->emEffect->setText(emulator.lastEffect);
+    ui->emOperation->setText(emulator.lastOperation.c_str());
+    ui->emOperands->setText(emulator.lastOperands.c_str());
+    ui->emType->setText(emulator.lastType.c_str());
+    ui->emEffect->setText(emulator.lastEffect.c_str());
     if(emulator.lastEffect=="DIVISION BY ZERO")
         showWarning("Division by zero detected!");
 }
@@ -291,7 +291,8 @@ void MainWindow::resetEmulator() {
 }
 
 void MainWindow::loadData() {
-    emulator.loadMemory(rawAssembly);
+    std::string assembly = std::string(rawAssembly.toLocal8Bit().constData());
+    emulator.loadMemory(assembly);
     updateEmulator();
 }
 
@@ -354,11 +355,11 @@ void MainWindow::addToTrace() {
     sprintf(temp,"%d",emulator.executedInstructions);
     string.append(temp);
     string.append(".  ");
-    string.append(emulator.lastOperation);
+    string.append(emulator.lastOperation.c_str());
     string.append(" ");
-    string.append(emulator.lastOperands);
+    string.append(emulator.lastOperands.c_str());
     string.append("   Effect: ");
-    string.append(emulator.lastEffect);
+    string.append(emulator.lastEffect.c_str());
     string.append("   pc=");
     sprintf(temp,"%04hx",emulator.pc);
     string.append(temp);

@@ -108,9 +108,8 @@ void Assembler::removeEmptyLines(char *buffer, int &length, int *actualLine) {
     length=j;
 }
 
-QString Assembler::readAssembly() {
-    QString returnString(fp);
-    return returnString;
+std::string Assembler::readAssembly() {
+    return std::string(fp);
 }
 
 int Assembler::checkRRR3(char *arg, int argl, char &reg1, char &reg2, char &reg3) {
@@ -254,7 +253,7 @@ int Assembler::checkRX1(char *arg, int argl, char &reg1, unsigned short &addr) {
         for(i=1;i<lookforl;i++) {
             if(!((lookfor[i]>='0' && lookfor[i]<='9') || (lookfor[i]>='a' && lookfor[i]<='f')))
                 return 2;
-            num=num*16+Emulator::hex2dec(QChar(lookfor[i]));
+            num=num*16+Emulator::hex2dec(lookfor[i]);
         }
         addr=num;
     }
@@ -343,7 +342,7 @@ int Assembler::checkRX2(char *arg, int argl, char &reg1, char &reg2, unsigned sh
         for(i=1;i<lookforl;i++) {
             if(!((lookfor[i]>='0' && lookfor[i]<='9') || (lookfor[i]>='a' && lookfor[i]<='f')))
                 return 2;
-            num=num*16+Emulator::hex2dec(QChar(lookfor[i]));
+            num=num*16+Emulator::hex2dec(lookfor[i]);
         }
         addr=num;
     }
@@ -516,6 +515,9 @@ void Assembler::assemble() {
         }
         int instrType=getInstructionType(instrName);
         if(instrType==-1) {
+            if(i>=bufferLength) {
+                i=bufferLength-1;
+            }
             sprintf(fp,"Invalid instruction %s on line %d\n",instrName,lines[i]);
             error=1;
             break;
@@ -570,12 +572,18 @@ void Assembler::assemble() {
             continue;
         }
         if(state==1) {
+            if(i>=bufferLength) {
+                i=bufferLength-1;
+            }
             sprintf(fp,"Arguments expected for instruction %s on line %d\n",instrName,lines[i]);
             error=1;
             break;
         }
         int instrType=getInstructionType(instrName);
         if(instrType==-1) {
+            if(i>=bufferLength) {
+                i=bufferLength-1;
+            }
             sprintf(fp,"Invalid instruction %s on line %d\n",instrName,lines[i]);
             error=1;
             break;
@@ -593,6 +601,9 @@ void Assembler::assemble() {
         }
         instrArgs[instrArgsLength]='\0';
         if(state==1 && instrArgsLength==0) {
+            if(i>=bufferLength) {
+                i=bufferLength-1;
+            }
             sprintf(fp,"Arguments expected for instruction %s on line %d\n",instrName,lines[i]);
             error=1;
             break;

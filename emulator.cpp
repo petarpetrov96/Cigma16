@@ -1,7 +1,6 @@
 #include "emulator.h"
 
-Emulator::Emulator()
-{
+Emulator::Emulator() {
     reset();
 }
 
@@ -43,8 +42,8 @@ void Emulator::reset() {
     output="";
 }
 
-QString Emulator::getRegisterFile() {
-    QString result;
+std::string Emulator::getRegisterFile() {
+    std::string result;
     char temp[50];
     for(int i=0;i<16;i++) {
         result.append("R");
@@ -61,38 +60,38 @@ QString Emulator::getRegisterFile() {
     return result;
 }
 
-QString Emulator::getMemoryFile() {
+std::string Emulator::getMemoryFile() {
     char* result=new char[65536*11+1];
     for(int i=0;i<65536;i++) {
         sprintf(result+i*11,"%04hx  %x%x%x%x\n",i,memory[i][0],memory[i][1],memory[i][2],memory[i][3]);
     }
     result[65536*11]='\0';
-    memoryFile=QString(result);
+    memoryFile=std::string(result);
     delete[] result;
     modified=0;
     return memoryFile;
 }
 
-QString Emulator::getMemoryAddress(int address) {
+std::string Emulator::getMemoryAddress(int address) {
     char result[12];
     sprintf(result,"%04hx  %x%x%x%x\n",address,memory[address][0],memory[address][1],memory[address][2],memory[address][3]);
     modifiedAddress=-1;
-    return QString(result);
+    return std::string(result);
 }
 
-void Emulator::loadMemory(QString &data) {
-    if(data.left(5).compare("ASM02"))
+void Emulator::loadMemory(std::string &data) {
+    if(data.substr(0,5).compare("ASM02"))
         return;
-    for(int i=5;i<data.length();i+=4) {
-        memory[(i-5)/4][0]=hex2dec(QChar(data[i]));
-        memory[(i-5)/4][1]=hex2dec(QChar(data[i+1]));
-        memory[(i-5)/4][2]=hex2dec(QChar(data[i+2]));
-        memory[(i-5)/4][3]=hex2dec(QChar(data[i+3]));
+    for(unsigned int i=5;i<data.length();i+=4) {
+        memory[(i-5)/4][0]=hex2dec(data[i]);
+        memory[(i-5)/4][1]=hex2dec(data[i+1]);
+        memory[(i-5)/4][2]=hex2dec(data[i+2]);
+        memory[(i-5)/4][3]=hex2dec(data[i+3]);
     }
     modified=true;
 }
 
-int Emulator::hex2dec(QChar c) {
+int Emulator::hex2dec(char c) {
     int resp[256];
     resp['0']=0;
     resp['1']=1;
@@ -110,7 +109,7 @@ int Emulator::hex2dec(QChar c) {
     resp['d']=13;
     resp['e']=14;
     resp['f']=15;
-    return resp[int(c.toLatin1())];
+    return resp[int(c)];
 }
 
 bool Emulator::step017() {
@@ -201,7 +200,7 @@ bool Emulator::step017() {
             int startt=registers[memory[pc][2]];
             int endt=startt+registers[memory[pc][3]];
             for(int t=startt;t<endt;t++) {
-                output.append(char(memory[t][0]*4096+memory[t][1]*256+memory[t][2]*16+memory[t][3]));
+                output.push_back(char(memory[t][0]*4096+memory[t][1]*256+memory[t][2]*16+memory[t][3]));
             }
             lastEffect="Write";
         }
@@ -458,7 +457,7 @@ bool Emulator::step144() {
             int startt=registers[memory[pc][2]];
             int endt=startt+registers[memory[pc][3]];
             for(int t=startt;t<endt;t++) {
-                output.append(char(memory[t][0]*4096+memory[t][1]*256+memory[t][2]*16+memory[t][3]));
+                output.push_back(char(memory[t][0]*4096+memory[t][1]*256+memory[t][2]*16+memory[t][3]));
             }
             lastEffect="Write";
         }
@@ -622,14 +621,14 @@ bool Emulator::isHalted() {
     return halted;
 }
 
-QString Emulator::getOutput() {
-    QString returnString(output);
+std::string Emulator::getOutput() {
+    std::string returnString(output);
     output="";
     return returnString;
 }
 
-QString Emulator::getInstructionList(int type) {
-    QString returnString="";
+std::string Emulator::getInstructionList(int type) {
+    std::string returnString="";
     if(type==1)
         for(int i=0;i<21;i++) {
             returnString.append(instructions017[i]);

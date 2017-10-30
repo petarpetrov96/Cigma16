@@ -1,5 +1,4 @@
 #include<string.h>
-#include<QString>
 #include "emulator.h"
 #ifndef ASSEMBLER_H
 #define ASSEMBLER_H
@@ -11,7 +10,7 @@ public:
     Assembler(const char* data, int length);  //constructor
     ~Assembler();  //destructor
     void assemble();  //function for assembling the data
-    QString readAssembly();  //function for parsing the raw assembly
+    std::string readAssembly();  //function for parsing the raw assembly
 protected:
     void removeTabs(char* buffer, int length);
     void removeSpaces(char* buffer, int& length);
