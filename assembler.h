@@ -18,7 +18,7 @@ protected:
     void removeComments(char* buffer, int& length);
     void removeEmptyLines(char* buffer, int& length, int* actualLine);
     void printError(int result,int lineError,char* fp);
-    int checkRRR3(char* arg, int argl,char& reg1,char& reg2,char& reg3);  //function for validating RRR instructions with 3 arugments
+    int checkRRR3(char* arg, int argl,char& reg1,char& reg2,char& reg3);  //function for validating RRR instructions with 3 arguments
     int checkRRR2(char* arg, int argl,char& reg1,char& reg2);             //function for validating RRR instructions with 2 arguments
     int checkRX1(char* arg,int argl,char& reg1,unsigned short& addr);     //function for validating RX instructions with 1 argument
     int checkRX2(char* arg,int argl,char& reg1,char& reg2,unsigned short& addr); //function for validating RX instructions with 2 arguments
