@@ -1,5 +1,6 @@
 #include<string>
 #include<string.h>
+#include<ctype.h>
 #ifndef EMULATOR_H
 #define EMULATOR_H
 

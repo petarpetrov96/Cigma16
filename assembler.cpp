@@ -1,373 +1,287 @@
 #include "assembler.h"
 #include "emulator.h"
+#include <QDebug>
 
+/*
+ * Constructor
+ */
 Assembler::Assembler(const char* data, int length) {
-    buffer=new char[length+1];
-    memcpy(buffer,data,length);
-    bufferLength=length;
+
+    // Copying the program code into the buffer
+    assemblyCode=new char[length+1];
+    memcpy(assemblyCode,data,length);
+    assemblyCode[length]='\0';
+    assemblyCodeLength=length;
+
+    // Creating an empty label list along with addresses for each label
     labelList=new char*[65536];
     labelAddresses=new unsigned short[65536];
-    labelSize=0;
-    fp=new char[262144];
-    fp[0]='\0';
+    labelListLength=0;
+
+    // Initializing an empty array to hold the rawAssembly
+    rawAssembly=new char[262144];
+    rawAssembly[0]='\0';
 }
 
+/*
+ * Destructor
+ */
 Assembler::~Assembler() {
-    delete[] buffer;
+
+    // Deleting all used memory
+    delete[] assemblyCode;
     delete[] labelAddresses;
-    for(int i=0;i<labelSize;i++)
+    for(int i=0;i<labelListLength;i++)
         delete[] labelList[i];
     delete[] labelList;
-    delete[] fp;
+    delete[] rawAssembly;
 }
 
-void Assembler::removeTabs(char *buffer, int length) {
+/*
+ * Replaces all tabs with spaces in "assemblyCode"
+ */
+void Assembler::removeTabs(char *assemblyCode, int length) {
     for(int i=0;i<length;i++)
-        if(buffer[i]=='\t')
-            buffer[i]=' ';
+        if(assemblyCode[i]=='\t')
+            assemblyCode[i]=' ';
 }
 
-void Assembler::removeSpaces(char *buffer, int &length) {
-    char* newBuffer=new char[length+1];
+/*
+ * Removes all double spaces in "assemblyCode"
+ */
+void Assembler::removeSpaces(char *assemblyCode, int &length) {
+
+    // Create empty buffer memory for the returned string and copy the first element
+    char* buffer=new char[length+1];
     int i,j=1;
-    newBuffer[0]=buffer[0];
+    buffer[0]=assemblyCode[0];
+
+    // Go through "assemblyCode" and copy all characters that are not
+    // preceeded by a space
     for(i=1;i<length;i++) {
-        if(buffer[i]==' ' && buffer[i-1]==' ')
+        if(assemblyCode[i]==' ' && assemblyCode[i-1]==' ')
             continue;
         else
-            newBuffer[j++]=buffer[i];
+            buffer[j++]=assemblyCode[i];
     }
-    newBuffer[j]='\0';
-    strcpy(buffer,newBuffer);
-    delete[] newBuffer;
+
+    // Terminate the string
+    buffer[j]='\0';
+
+    // Copy the temporary buffer to "assemblyCode" and delete it from the heap
+    strcpy(assemblyCode,buffer);
+    delete[] buffer;
     length=j;
 }
 
-void Assembler::fixNewLineCharacters(char *buffer, int &length) {
-    char* newBuffer=new char[length+1];
+/*
+ * Fixes all new characters to \n
+ */
+void Assembler::fixNewLineCharacters(char *assemblyCode, int &length) {
+
+    // Create empty buffer memory for the returned string
+    char* buffer=new char[length+1];
     int i,j=0;
+
+    // Copy all characters except for \r
+    // Replace \r\n with \n and single \r with \n
     for(i=0;i<length;i++) {
-        if(i<length-1 && buffer[i]=='\r' && buffer[i+1]=='\n')
-            newBuffer[j++]=buffer[++i];
-        else if(buffer[i]=='\r')
-            newBuffer[j++]='\n';
+        if(i<length-1 && assemblyCode[i]=='\r' && assemblyCode[i+1]=='\n')
+            buffer[j++]=assemblyCode[++i];
+        else if(assemblyCode[i]=='\r')
+            buffer[j++]='\n';
         else
-            newBuffer[j++]=buffer[i];
+            buffer[j++]=assemblyCode[i];
     }
-    newBuffer[j]='\0';
-    memcpy(buffer,newBuffer,j+1);
-    delete[] newBuffer;
+
+    // Terminate the string
+    buffer[j]='\0';
+
+    // Copy the temporary buffer to "assemblyCode" and delete it from the heap
+    memcpy(assemblyCode,buffer,j+1);
+    delete[] buffer;
     length=j;
 }
 
-void Assembler::removeComments(char *buffer, int &length) {
-    char* newBuffer=new char[length+1];
+/*
+ * Removes all comments
+ */
+void Assembler::removeComments(char *assemblyCode, int &length) {
+
+    // Create empty buffer memory for the returned string
+    char* buffer=new char[length+1];
     int i,j=0;
+
+    // Copy everything except the characters between ';' and '\n'
     for(i=0;i<length;i++) {
-        if(buffer[i]==';') {
-            while(buffer[i++]!='\n');
-            newBuffer[j++]='\n';
+        if(assemblyCode[i]==';') {
+
+            // Start from the i-th character and keep on until we reach a new line
+            // or the end of the "assemblyCode"
+            while(assemblyCode[i++]!='\n' && i<length);
+            if(i<length) buffer[j++]='\n';
+
+            // Go back one character since i will increase again in the for
             i--;
         }
         else
-            newBuffer[j++]=buffer[i];
+            buffer[j++]=assemblyCode[i];
     }
-    newBuffer[j]='\0';
-    memcpy(buffer,newBuffer,j+1);
-    delete[] newBuffer;
+
+    // Terminate the string
+    buffer[j]='\0';
+
+    // Copy the temporary buffer to "assemblyCode" and delete it from the heap
+    memcpy(assemblyCode,buffer,j+1);
+    delete[] buffer;
     length=j;
 }
 
-void Assembler::removeEmptyLines(char *buffer, int &length, int *actualLine) {
-    char* newBuffer=new char[length+1];
-    int* newLines=new int[length+1];
+/*
+ * Removes all empty lines
+ */
+void Assembler::removeEmptyLines(char *assemblyCode, int &length, int *actualLine) {
+
+    // Create empty buffer memory for the returned string
+    // and keep track of what line every character belonged to
+    // (used for error messages)
+    char* buffer=new char[length+1];
+    int* oldLineNumbers=new int[length+1];
     int i,j=0;
+
+    // Remove all lines that consist of just '\n' or ' ' and '\n'
     for(i=0;i<length;i++) {
-        if(i>0 && buffer[i]=='\n' && buffer[i-1]=='\n')
+        if(i>0 && assemblyCode[i]=='\n' && assemblyCode[i-1]=='\n')
             continue;
-        else if(i>0 && i<length-1 && buffer[i]==' ' && buffer[i-1]=='\n' && buffer[i+1]=='\n') {
+        else if(i>0 && i<length-1 && assemblyCode[i]==' ' && assemblyCode[i-1]=='\n' && assemblyCode[i+1]=='\n') {
             i++;
             continue;
         }
-        else if(i==0 && i<length-1 && buffer[i]=='\n' && buffer[i+1]=='\n')
+        else if(i==0 && i<length-1 && assemblyCode[i]=='\n' && assemblyCode[i+1]=='\n')
             continue;
         else {
-            newBuffer[j]=buffer[i];
-            newLines[j++]=actualLine[i];
+            buffer[j]=assemblyCode[i];
+            oldLineNumbers[j++]=actualLine[i];
         }
     }
-    if(newBuffer[j-1]=='\n' && newBuffer[j-2]==' ')
+
+    // Remove if the end of the file is a new line followed by just a space character
+    // or if the end of the file is just a new line
+    if(buffer[j-1]=='\n' && buffer[j-2]==' ')
         j-=2;
-    else if(newBuffer[j-1]=='\n')
+    else if(buffer[j-1]=='\n')
         j--;
-    newBuffer[j]='\0';
-    memcpy(buffer,newBuffer,j+1);
-    memcpy(actualLine,newLines,sizeof(int)*j);
-    delete[] newBuffer;
-    delete[] newLines;
+
+    // Terminate the string
+    buffer[j]='\0';
+
+    // Copy the temporary buffer to "assemblyCode",
+    // the corresponding line numbers to "actualLine"
+    // and delete them from the heap
+    memcpy(assemblyCode,buffer,j+1);
+    memcpy(actualLine,oldLineNumbers,sizeof(int)*j);
+    delete[] buffer;
+    delete[] oldLineNumbers;
     length=j;
 }
 
+/*
+ * Returns an std::string containing the compiled assembly
+ */
 std::string Assembler::readAssembly() {
-    return std::string(fp);
+    return std::string(rawAssembly);
 }
 
+/*
+ * Checks the formatting of an RRR instruction with 3 arguments
+ * Returns an error number, check printError for explanation
+ */
 int Assembler::checkRRR3(char *arg, int argl, char &reg1, char &reg2, char &reg3) {
-    char temp[64];
-    int i=0;
-    if(arg[i]!='R') return 1;
-    i++;
-    if(arg[i]>='0' && arg[i]<='9') {
-        if(arg[i+1]>='0' && arg[i+1]<='9') {
-            sprintf(temp,"%x",(arg[i]-'0')*10+(arg[i+1]-'0'));
-            reg1=temp[0];
-            i++;
-        }
-        else {
-            reg1=arg[i];
-        }
+    int result;
+    int comma1,comma2;
+    comma1=findNextCharacter(arg,argl,',',0);
+    if(comma1==-1) {
+        return 4;
     }
-    else
-        return 2;
-    i++;
-    if(arg[i]!=',') return 3;
-    i++;
-    if(arg[i]!='R') return 1;
-    i++;
-    if(arg[i]>='0' && arg[i]<='9') {
-        if(arg[i+1]>='0' && arg[i+1]<='9') {
-            sprintf(temp,"%x",(arg[i]-'0')*10+(arg[i+1]-'0'));
-            reg2=temp[0];
-            i++;
-        }
-        else {
-            reg2=arg[i];
-        }
+    comma2=findNextCharacter(arg,argl,',',comma1+1);
+    if(comma2==-1) {
+        return 4;
     }
-    else
-        return 2;
-    i++;
-    if(arg[i]!=',') return 3;
-    i++;
-    if(arg[i]!='R') return 1;
-    i++;
-    if(arg[i]>='0' && arg[i]<='9') {
-        if(arg[i+1]>='0' && arg[i+1]<='9') {
-            sprintf(temp,"%x",(arg[i]-'0')*10+(arg[i+1]-'0'));
-            reg3=temp[0];
-            i++;
-        }
-        else {
-            reg3=arg[i];
-        }
+    result=getRegister(arg,0,comma1,reg1);
+    if(result!=0) {
+        return result;
     }
-    else
-        return 2;
-    i++;
-    if(i!=argl) return 4;
+    result=getRegister(arg,comma1+1,comma2,reg2);
+    if(result!=0) {
+        return result;
+    }
+    result=getRegister(arg,comma2+1,argl,reg3);
+    if(result!=0) {
+        return result;
+    }
     return 0;
 }
 
+/*
+ * Checks the formatting of an RRR instruction with 2 arguments
+ * Returns an error number, check printError for explanation
+ */
 int Assembler::checkRRR2(char *arg, int argl, char &reg1, char &reg2) {
-    char temp[64];
-    int i=0;
-    if(arg[i]!='R') return 1;
-    i++;
-    if(arg[i]>='0' && arg[i]<='9') {
-        if(arg[i+1]>='0' && arg[i+1]<='9') {
-            sprintf(temp,"%x",(arg[i]-'0')*10+(arg[i+1]-'0'));
-            reg1=temp[0];
-            i++;
-        }
-        else {
-            reg1=arg[i];
-        }
+    int result;
+    int comma;
+    comma=findNextCharacter(arg,argl,',',0);
+    if(comma==-1) {
+        return 4;
     }
-    else
-        return 2;
-    i++;
-    if(arg[i]!=',') return 3;
-    i++;
-    if(arg[i]!='R') return 1;
-    i++;
-    if(arg[i]>='0' && arg[i]<='9') {
-        if(arg[i+1]>='0' && arg[i+1]<='9') {
-            sprintf(temp,"%x",(arg[i]-'0')*10+(arg[i+1]-'0'));
-            reg2=temp[0];
-            i++;
-        }
-        else {
-            reg2=arg[i];
-        }
+    result=getRegister(arg,0,comma,reg1);
+    if(result!=0) {
+        return result;
     }
-    else
-        return 2;
-    i++;
-    if(i!=argl) return 4;
+    result=getRegister(arg,comma+1,argl,reg2);
+    if(result!=0) {
+        return result;
+    }
     return 0;
 }
 
+/*
+ * Checks the formatting of an RX instruction with 1 argument
+ * Returns an error number, check printError for explanation
+ */
 int Assembler::checkRX1(char *arg, int argl, char &reg1, unsigned short &addr) {
-    char temp[64];
-    char lookfor[64];
-    int lookforl=0;
-    lookfor[lookforl]='\0';
-    int i=0;
-    while(arg[i]!='[' && i<argl) {
-        lookfor[lookforl++]=arg[i++];
-        lookfor[lookforl]='\0';
-    }
-    if(i==argl) return 4;
-    i++;
-    if(arg[i]!='R') return 1;
-    i++;
-    if(arg[i]>='0' && arg[i]<='9') {
-        if(arg[i+1]>='0' && arg[i+1]<='9') {
-            sprintf(temp,"%x",(arg[i]-'0')*10+(arg[i+1]-'0'));
-            reg1=temp[0];
-            i++;
-        }
-        else {
-            reg1=arg[i];
-        }
-    }
-    else
-        return 2;
-    i++;
-    if(arg[i]!=']') return 4;
-    i++;
-    if(i!=argl) return 4;
-    if(lookfor[0]>='0' && lookfor[0]<='9') {
-        int num=0;
-        for(i=0;i<lookforl;i++) {
-            if(lookfor[i]<'0' || lookfor[i]>'9')
-                return 2;
-            num=num*10+(lookfor[i]-'0');
-        }
-        addr=num;
-    }
-    else if(lookfor[0]=='$') {
-        if(lookforl!=5)
-            return 2;
-        int num=0;
-        for(i=1;i<lookforl;i++) {
-            if(!((lookfor[i]>='0' && lookfor[i]<='9') || (lookfor[i]>='a' && lookfor[i]<='f')))
-                return 2;
-            num=num*16+Emulator::hex2dec(lookfor[i]);
-        }
-        addr=num;
-    }
-    else if(lookfor[0]=='-') {
-        int num=0;
-        for(i=1;i<lookforl;i++) {
-            if(lookfor[i]<'0' || lookfor[i]>'9')
-                return 2;
-            num=num*10+(lookfor[i]-'0');
-        }
-        addr=-num;
-    }
-    else {
-        addr=0xffff;
-        for(i=0;i<labelSize;i++)
-            if(strcmp(lookfor,labelList[i])==0) {
-                addr=labelAddresses[i];
-                break;
-            }
-        if(addr==0xffff)
-            return 5;
+    int result;
+    result=getMemoryLocation(arg,0,argl,reg1,addr);
+    if(result!=0) {
+        return result;
     }
     return 0;
 }
 
+/*
+ * Checks the formatting of an RX instruction with 2 arguments
+ * Returns an error number, check printError for explanation
+ */
 int Assembler::checkRX2(char *arg, int argl, char &reg1, char &reg2, unsigned short &addr) {
-    char temp[64];
-    char lookfor[64];
-    int lookforl=0;
-    lookfor[lookforl]='\0';
-    int i=0;
-    if(arg[i]!='R') return 1;
-    i++;
-    if(arg[i]>='0' && arg[i]<='9') {
-        if(arg[i+1]>='0' && arg[i+1]<='9') {
-            sprintf(temp,"%x",(arg[i]-'0')*10+(arg[i+1]-'0'));
-            reg1=temp[0];
-            i++;
-        }
-        else {
-            reg1=arg[i];
-        }
+    int result;
+    int comma;
+    comma=findNextCharacter(arg,argl,',',0);
+    if(comma==-1) {
+        return 4;
     }
-    else
-        return 2;
-    i++;
-    if(arg[i]!=',') return 3;
-    i++;
-    while(arg[i]!='[' && i<argl) {
-        lookfor[lookforl++]=arg[i++];
-        lookfor[lookforl]='\0';
+    result=getRegister(arg,0,comma,reg1);
+    if(result!=0) {
+        return result;
     }
-    if(i==argl) return 4;
-    i++;
-    if(arg[i]!='R') return 1;
-    i++;
-    if(arg[i]>='0' && arg[i]<='9') {
-        if(arg[i+1]>='0' && arg[i+1]<='9') {
-            sprintf(temp,"%x",(arg[i]-'0')*10+(arg[i+1]-'0'));
-            reg2=temp[0];
-            i++;
-        }
-        else {
-            reg2=arg[i];
-        }
-    }
-    else
-        return 2;
-    i++;
-    if(arg[i]!=']') return 4;
-    i++;
-    if(i!=argl) return 4;
-    if(lookfor[0]>='0' && lookfor[0]<='9') {
-        int num=0;
-        for(i=0;i<lookforl;i++) {
-            if(lookfor[i]<'0' || lookfor[i]>'9')
-                return 2;
-            num=num*10+(lookfor[i]-'0');
-        }
-        addr=num;
-    }
-    else if(lookfor[0]=='$') {
-        if(lookforl!=5)
-            return 2;
-        int num=0;
-        for(i=1;i<lookforl;i++) {
-            if(!((lookfor[i]>='0' && lookfor[i]<='9') || (lookfor[i]>='a' && lookfor[i]<='f')))
-                return 2;
-            num=num*16+Emulator::hex2dec(lookfor[i]);
-        }
-        addr=num;
-    }
-    else if(lookfor[0]=='-') {
-        int num=0;
-        for(i=1;i<lookforl;i++) {
-            if(lookfor[i]<'0' || lookfor[i]>'9')
-                return 2;
-            num=num*10+(lookfor[i]-'0');
-        }
-        addr=-num;
-    }
-    else {
-        addr=0xffff;
-        for(i=0;i<labelSize;i++)
-            if(strcmp(lookfor,labelList[i])==0) {
-                addr=labelAddresses[i];
-                break;
-            }
-        if(addr==0xffff)
-            return 5;
+    result=getMemoryLocation(arg,comma+1,argl,reg2,addr);
+    if(result!=0) {
+        return result;
     }
     return 0;
 }
 
+/*
+ * Converts an integer error to a meaningful string with an added line number
+ */
 void Assembler::printError(int result,int lineError,char* fp) {
     if(result==1) sprintf(fp,"Unexpected argument - R expected on line %d!\n",lineError);
     if(result==2) sprintf(fp,"Unexpected argument - register expected on line %d!\n",lineError);
@@ -376,6 +290,9 @@ void Assembler::printError(int result,int lineError,char* fp) {
     if(result==5) sprintf(fp,"Memory address not found - line %d!\n",lineError);
 }
 
+/*
+ * Translates an instruction and its arguments to a compiled hexadecimal representation
+ */
 bool Assembler::translateInstruction(char *instrName, char *instrArgs, int instrArgsLength, char *fp, int lineError) {
     int t=getInstructionType(instrName);
     int result;
@@ -453,23 +370,27 @@ bool Assembler::translateInstruction(char *instrName, char *instrArgs, int instr
     return false;
 }
 
+/*
+ * Assembles the "assemblyCode" passed to the class
+ * and stores the result in "rawAssembly"
+ */
 void Assembler::assemble() {
     int i,curLine=1;
-    int* lines=new int[bufferLength];
-    removeTabs(buffer,bufferLength);
-    removeSpaces(buffer,bufferLength);
-    fixNewLineCharacters(buffer,bufferLength);
-    removeComments(buffer,bufferLength);
-    for(i=0;i<bufferLength;i++) {
+    int* lines=new int[assemblyCodeLength];
+    removeTabs(assemblyCode,assemblyCodeLength);
+    removeSpaces(assemblyCode,assemblyCodeLength);
+    fixNewLineCharacters(assemblyCode,assemblyCodeLength);
+    removeComments(assemblyCode,assemblyCodeLength);
+    for(i=0;i<assemblyCodeLength;i++) {
         lines[i]=curLine;
-        if(buffer[i]=='\n')
+        if(assemblyCode[i]=='\n')
             curLine++;
     }
-    removeEmptyLines(buffer,bufferLength,lines);
+    removeEmptyLines(assemblyCode,assemblyCodeLength,lines);
     i=0;
     int memoryAddress=0;
     int error=0;
-    while(i<bufferLength) {
+    while(i<assemblyCodeLength) {
         char labelName[1024];
         int labelLength=0;
         char instrName[1024];
@@ -477,21 +398,21 @@ void Assembler::assemble() {
         int state=0;
         //parse label name
         while(1) {
-            if(buffer[i]==' ')
+            if(assemblyCode[i]==' ')
                 break;
-            if(buffer[i]=='\n' || i==bufferLength) {
+            if(assemblyCode[i]=='\n' || i==assemblyCodeLength) {
                 state=1;
                 break;
             }
-            labelName[labelLength++]=buffer[i];
+            labelName[labelLength++]=assemblyCode[i];
             i++;
         }
         labelName[labelLength]='\0';
         if(labelLength!=0) {
-            labelList[labelSize]=new char[1024];
-            labelAddresses[labelSize]=memoryAddress;
-            strcpy(labelList[labelSize],labelName);
-            labelSize++;
+            labelList[labelListLength]=new char[1024];
+            labelAddresses[labelListLength]=memoryAddress;
+            strcpy(labelList[labelListLength],labelName);
+            labelListLength++;
         }
         if(state==1) {
             i++;
@@ -499,13 +420,13 @@ void Assembler::assemble() {
         }
         i++;
         while(1) {
-            if(buffer[i]==' ')
+            if(assemblyCode[i]==' ')
                 break;
-            if(buffer[i]=='\n' || i==bufferLength) {
+            if(assemblyCode[i]=='\n' || i==assemblyCodeLength) {
                 state=1;
                 break;
             }
-            instrName[instrLength++]=buffer[i];
+            instrName[instrLength++]=assemblyCode[i];
             i++;
         }
         instrName[instrLength]='\0';
@@ -515,10 +436,10 @@ void Assembler::assemble() {
         }
         int instrType=getInstructionType(instrName);
         if(instrType==-1) {
-            if(i>=bufferLength) {
-                i=bufferLength-1;
+            if(i>=assemblyCodeLength) {
+                i=assemblyCodeLength-1;
             }
-            sprintf(fp,"Invalid instruction %s on line %d\n",instrName,lines[i]);
+            sprintf(rawAssembly,"Invalid instruction %s on line %d\n",instrName,lines[i]);
             error=1;
             break;
         }
@@ -528,14 +449,14 @@ void Assembler::assemble() {
         else {
             memoryAddress+=2;
         }
-        while(buffer[i]!='\n' && i<bufferLength) i++;
+        while(assemblyCode[i]!='\n' && i<assemblyCodeLength) i++;
         i++;
     }
     if(error)
         return;
     i=0;
-    sprintf(fp,"ASM02");
-    while(i<bufferLength) {
+    sprintf(rawAssembly,"ASM02");
+    while(i<assemblyCodeLength) {
         char instrName[1024];
         int instrLength=0;
         char instrArgs[1024];
@@ -543,9 +464,9 @@ void Assembler::assemble() {
         int state=0;
         //parse label name
         while(1) {
-            if(buffer[i]==' ')
+            if(assemblyCode[i]==' ')
                 break;
-            if(buffer[i]=='\n' || i==bufferLength) {
+            if(assemblyCode[i]=='\n' || i==assemblyCodeLength) {
                 state=1;
                 break;
             }
@@ -557,13 +478,13 @@ void Assembler::assemble() {
         }
         i++;
         while(1) {
-            if(buffer[i]==' ')
+            if(assemblyCode[i]==' ')
                 break;
-            if(buffer[i]=='\n' || i==bufferLength) {
+            if(assemblyCode[i]=='\n' || i==assemblyCodeLength) {
                 state=1;
                 break;
             }
-            instrName[instrLength++]=buffer[i];
+            instrName[instrLength++]=assemblyCode[i];
             i++;
         }
         instrName[instrLength]='\0';
@@ -572,48 +493,177 @@ void Assembler::assemble() {
             continue;
         }
         if(state==1) {
-            if(i>=bufferLength) {
-                i=bufferLength-1;
+            if(i>=assemblyCodeLength) {
+                i=assemblyCodeLength-1;
             }
-            sprintf(fp,"Arguments expected for instruction %s on line %d\n",instrName,lines[i]);
+            sprintf(rawAssembly,"Arguments expected for instruction %s on line %d\n",instrName,lines[i]);
             error=1;
             break;
         }
         int instrType=getInstructionType(instrName);
         if(instrType==-1) {
-            if(i>=bufferLength) {
-                i=bufferLength-1;
+            if(i>=assemblyCodeLength) {
+                i=assemblyCodeLength-1;
             }
-            sprintf(fp,"Invalid instruction %s on line %d\n",instrName,lines[i]);
+            sprintf(rawAssembly,"Invalid instruction %s on line %d\n",instrName,lines[i]);
             error=1;
             break;
         }
         i++;
         while(1) {
-            if(buffer[i]==' ')
+            if(assemblyCode[i]==' ')
                 break;
-            if(buffer[i]=='\n' || i==bufferLength) {
+            if(assemblyCode[i]=='\n' || i==assemblyCodeLength) {
                 state=1;
                 break;
             }
-            instrArgs[instrArgsLength++]=buffer[i];
+            instrArgs[instrArgsLength++]=assemblyCode[i];
             i++;
         }
         instrArgs[instrArgsLength]='\0';
         if(state==1 && instrArgsLength==0) {
-            if(i>=bufferLength) {
-                i=bufferLength-1;
+            if(i>=assemblyCodeLength) {
+                i=assemblyCodeLength-1;
             }
-            sprintf(fp,"Arguments expected for instruction %s on line %d\n",instrName,lines[i]);
+            sprintf(rawAssembly,"Arguments expected for instruction %s on line %d\n",instrName,lines[i]);
             error=1;
             break;
         }
-        if(!translateInstruction(instrName,instrArgs,instrArgsLength,fp,lines[i])) {
+        if(!translateInstruction(instrName,instrArgs,instrArgsLength,rawAssembly,lines[i])) {
             error=1;
             break;
         }
-        while(buffer[i]!='\n' && i<bufferLength) i++;
+        while(assemblyCode[i]!='\n' && i<assemblyCodeLength) i++;
         i++;
     }
     delete[] lines;
+}
+
+/*
+ * Finds the first occurence of "character" between "pos" and "argl" in "arg"
+ */
+int Assembler::findNextCharacter(char *arg, int argl, char character, int pos=0) {
+    while(pos<argl) {
+        if(arg[pos++]==character) {
+            return pos-1;
+        }
+    }
+    return -1;
+}
+
+/*
+ * Converts a string representation of a register (Rxx) to a hexadecimal number
+ * Returns 0 on success and non-zero on failure, check printError for more details
+ */
+int Assembler::getRegister(char *arg, int start, int end, char& reg) {
+    int length=end-start;
+    if(length<2 || length>3) {
+        return 4;
+    }
+    if(arg[start]!='R') {
+        return 1;
+    }
+    if(isdigit(arg[start+1])) {
+        if(length==3 && isdigit(arg[start+2])) {
+            int decimal=(arg[start+1]-'0')*10+(arg[start+2]-'0');
+            if(decimal<0 || decimal>15) {
+                return 4;
+            }
+            char temp[10];
+            sprintf(temp,"%x",decimal);
+            reg=temp[0];
+        }
+        else if(length==2) {
+            reg=arg[start+1];
+        }
+        else {
+            return 2;
+        }
+    }
+    else {
+        return 2;
+    }
+    return 0;
+}
+
+/*
+ * Converts a string representation of a memory location (label[Rxx]) to a hexadecimal number and an address location
+ * Returns 0 on success and non-zero on failure, check printError for more details
+ */
+int Assembler::getMemoryLocation(char *arg, int start, int end, char &reg, unsigned short &addr) {
+    if(end-start<5) { // a[R0]
+        return 4;
+    }
+
+    int openbracket=findNextCharacter(arg,end,'[',start);
+    if(openbracket==-1) {
+        return 4;
+    }
+
+    int closebracket=findNextCharacter(arg,end,']',openbracket+1);
+    if(closebracket==-1) {
+        return 4;
+    }
+
+    char lookFor[1024];
+    int lookForLength=0;
+    for(int i=start;i<openbracket;i++) {
+        lookFor[lookForLength++]=arg[i];
+    }
+    lookFor[lookForLength]='\0';
+
+    int result;
+    if((result=getRegister(arg,openbracket+1,closebracket,reg))!=0) {
+        return result;
+    }
+
+    if(lookForLength==0) {
+        return 4;
+    }
+    if(isdigit(lookFor[0])) {
+        int returnNumber=0;
+        for(int i=0;i<lookForLength;i++) {
+            if(!isdigit(lookFor[i])) {
+                return 4;
+            }
+            returnNumber=returnNumber*10+(lookFor[i]-'0');
+        }
+        addr=returnNumber;
+    }
+    else if(lookFor[0]=='$') {
+        if(lookForLength!=5) {
+            return 4;
+        }
+        int returnNumber=0;
+        for(int i=1;i<lookForLength;i++) {
+            if(!(isdigit(lookFor[i]) || (lookFor[i]>='a' && lookFor[i]<='f'))) {
+                return 4;
+            }
+            returnNumber=returnNumber*16+Emulator::hex2dec(lookFor[i]);
+        }
+        addr=returnNumber;
+    }
+    else if(lookFor[0]=='-') {
+        int returnNumber=0;
+        for(int i=1;i<lookForLength;i++) {
+            if(!isdigit(lookFor[i])) {
+                return 4;
+            }
+            returnNumber=returnNumber*10+(lookFor[i]-'0');
+        }
+        addr=-returnNumber;
+    }
+    else {
+        addr=0xffff;
+        for(int i=0;i<labelListLength;i++) {
+            if(strcmp(lookFor,labelList[i])==0) {
+                addr=labelAddresses[i];
+                break;
+            }
+        }
+        if(addr==0xffff) {
+            return 5;
+        }
+    }
+    return 0;
 }
