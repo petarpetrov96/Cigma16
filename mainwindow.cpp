@@ -157,9 +157,10 @@ void MainWindow::toggleSpeed() {
 
 void MainWindow::assemble() {
     QString tempString=ui->editorTextEdit->document()->toPlainText();
-    char* data=new char[tempString.length()+1];
-    memcpy(data,tempString.toStdString().c_str(),tempString.length());
-    data[tempString.length()]='\0';
+    int dataToCopyLength = strlen(tempString.toStdString().c_str());
+    char* data=new char[dataToCopyLength+1];
+    memcpy(data,tempString.toStdString().c_str(),dataToCopyLength);
+    data[dataToCopyLength]='\0';
     if(architecture==ARCHITECTURE_SIGMA16_0_1_7) {
         Assembler017 assembler(data,strlen(data));
         assembler.assemble();
