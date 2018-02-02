@@ -1,5 +1,10 @@
 #include "assembler017.h"
 
+/*
+ * This file contains version-specific information about Sigma16 0.1.7
+ * It just follows the original version of the architecture
+ */
+
 Assembler017::Assembler017(const char* data, int length) : Assembler(data,length) {
 }
 
