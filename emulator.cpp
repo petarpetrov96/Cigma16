@@ -1,40 +1,59 @@
 #include "emulator.h"
 
+/*
+ * Constructor
+ */
 Emulator::Emulator() {
     reset();
 }
 
+/*
+ * Returns whether the memory has been modified since the last
+ * time the memory file has been requested
+ */
 bool Emulator::isMemoryModified() {
     return modified;
 }
 
+/*
+ * Returns the last modified memory address
+ */
 int Emulator::isMemoryAddressModified() {
     return modifiedAddress;
 }
 
+/*
+ * Resets all emulator variables
+ */
 void Emulator::reset() {
-    //resetting the pc/ir/adr/dat registers
+    // Resets the pc/ir/adr/dat registers
     pc=0;
     ir=0;
     adr=0;
     dat=0;
-    //resetting the registers and memory
+
+    // Resets the registers and memory
     memset(registers,0,16*sizeof(short));
     memset(memory,0,65536*4*sizeof(char));
-    //setting the modified tag of the memory
+
+    // Resets the modified tags of the memory
     modified=1;
     modifiedAddress=0;
-    //resetting selections
+
+    // Resets the text selections
     leftAffectedBegin=0;
     leftAffectedEnd=0;
     rightAffectedBegin=0;
     rightAffectedEnd=0;
-    //resetting the halted/paused flags
+
+    // Resets the halted/paused flags
     halted=false;
     paused=false;
-    //resetting the exectutedInstructions
+
+    // Resets the number of executed instructions
     executedInstructions=0;
-    //resetting all strings
+
+    // Resets all strings
     lastEffect="";
     lastOperands="";
     lastOperation="";
@@ -42,6 +61,11 @@ void Emulator::reset() {
     output="";
 }
 
+/*
+ * Returns a human-readable string representation
+ * of the current state of the register file
+ * The format is Rxx yyyy
+ */
 std::string Emulator::getRegisterFile() {
     std::string result;
     char temp[50];
@@ -60,6 +84,11 @@ std::string Emulator::getRegisterFile() {
     return result;
 }
 
+/*
+ * Returns a human-readable string representation
+ * of the current state of the memory file
+ * Format is xxxx yyyy
+ */
 std::string Emulator::getMemoryFile() {
     char* result=new char[65536*11+1];
     for(int i=0;i<65536;i++) {
@@ -72,6 +101,11 @@ std::string Emulator::getMemoryFile() {
     return memoryFile;
 }
 
+/*
+ * Returns a human-readable string representation
+ * of the current state of a single line in the memory file
+ * Format is xxxx yyyy
+ */
 std::string Emulator::getMemoryAddress(int address) {
     char result[12];
     sprintf(result,"%04hx  %x%x%x%x\n",address,memory[address][0],memory[address][1],memory[address][2],memory[address][3]);
@@ -79,6 +113,9 @@ std::string Emulator::getMemoryAddress(int address) {
     return std::string(result);
 }
 
+/*
+ * Loads machine code in the memory file
+ */
 void Emulator::loadMemory(std::string &data) {
     if(data.substr(0,5).compare("ASM02"))
         return;
@@ -91,6 +128,9 @@ void Emulator::loadMemory(std::string &data) {
     modified=true;
 }
 
+/*
+ * Converts hexadecimal to decimal (stupid way, but it's pretty fast)
+ */
 int Emulator::hex2dec(char c) {
     int resp[256];
     resp['0']=0;
@@ -112,6 +152,9 @@ int Emulator::hex2dec(char c) {
     return resp[int(c)];
 }
 
+/*
+ * Executes the next instruction using Sigma16 0.1.7
+ */
 bool Emulator::step017() {
     if(halted) {
         return false;
@@ -351,6 +394,9 @@ bool Emulator::step017() {
     return true;
 }
 
+/*
+ * Executes the next instruction using Sigma16 1.4.4
+ */
 bool Emulator::step144() {
     if(halted) {
         return false;
@@ -617,16 +663,25 @@ bool Emulator::step144() {
     return true;
 }
 
+/*
+ * Returns whether the emulator has been halted or is still running
+ */
 bool Emulator::isHalted() {
     return halted;
 }
 
+/*
+ * Returns the output of the trap instructions
+ */
 std::string Emulator::getOutput() {
     std::string returnString(output);
     output="";
     return returnString;
 }
 
+/*
+ * Returns an instruction list of the selected Sigma16 architecture
+ */
 std::string Emulator::getInstructionList(int type) {
     std::string returnString="";
     if(type==1)

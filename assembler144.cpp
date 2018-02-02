@@ -1,5 +1,10 @@
 #include "assembler144.h"
 
+/*
+ * This file contains version-specific information about Sigma16 1.4.4
+ * It just follows the original version of the architecture
+ */
+
 Assembler144::Assembler144(const char* data, int length) : Assembler(data,length) {
 }
 
