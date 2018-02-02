@@ -8,7 +8,7 @@ Highlighter::Highlighter(QTextDocument *parent) : QSyntaxHighlighter(parent)
 {
     // Initializes a dark theme with no error line
     setTheme(THEME_DARK);
-    =-1;
+    lineError=-1;
 }
 
 /*
