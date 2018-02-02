@@ -294,6 +294,12 @@ void Assembler::printError(int result,int lineError,char* fp) {
  * Translates an instruction and its arguments to a compiled hexadecimal representation
  */
 bool Assembler::translateInstruction(char *instrName, char *instrArgs, int instrArgsLength, char *fp, int lineError) {
+    // getInstructionType returns the type of instruction where
+    // 1 =  RRR instruction with 3 arguments (e.g. add R1,R2,R3)
+    // 2 =  RRR instruction with 2 arguments (e.g. cmp R1,R2)
+    // 3 =   RX instruction with 2 arguments (e.g. lea R1,label[R2])
+    // 4 =   RX instruction with 1 argument  (e.g. jump label[R1])
+    // 5 = data instruction
     int t=getInstructionType(instrName);
     int result;
     if(t==1) {
@@ -376,27 +382,37 @@ bool Assembler::translateInstruction(char *instrName, char *instrArgs, int instr
  */
 void Assembler::assemble() {
     int i,curLine=1;
-    int* lines=new int[assemblyCodeLength];
-    removeTabs(assemblyCode,assemblyCodeLength);
-    removeSpaces(assemblyCode,assemblyCodeLength);
-    fixNewLineCharacters(assemblyCode,assemblyCodeLength);
-    removeComments(assemblyCode,assemblyCodeLength);
+    int* lines=new int[assemblyCodeLength]; // Temporary array that keeps track of which line each character was on, used in showing errors
+
+    // Converts the human-readable assembly to a format the machine understands better
+    removeTabs(assemblyCode,assemblyCodeLength); // Replaces tabs with spaces
+    removeSpaces(assemblyCode,assemblyCodeLength); // Removes all double spaces
+    fixNewLineCharacters(assemblyCode,assemblyCodeLength); // Replaces \r\n and \r with \n
+    removeComments(assemblyCode,assemblyCodeLength); // Removes all comments
+
+    // Fill the line information array
     for(i=0;i<assemblyCodeLength;i++) {
         lines[i]=curLine;
         if(assemblyCode[i]=='\n')
             curLine++;
     }
-    removeEmptyLines(assemblyCode,assemblyCodeLength,lines);
+
+    removeEmptyLines(assemblyCode,assemblyCodeLength,lines); // Removes empty lines
+
     i=0;
     int memoryAddress=0;
     int error=0;
+
+    // Fetches all label names and makes sure instructions are valid
+    // Works line by line
     while(i<assemblyCodeLength) {
         char labelName[1024];
         int labelLength=0;
         char instrName[1024];
         int instrLength=0;
         int state=0;
-        //parse label name
+
+        // Parses label name
         while(1) {
             if(assemblyCode[i]==' ')
                 break;
@@ -408,17 +424,25 @@ void Assembler::assemble() {
             i++;
         }
         labelName[labelLength]='\0';
+
+        // Error checking
         if(labelLength!=0) {
             labelList[labelListLength]=new char[1024];
             labelAddresses[labelListLength]=memoryAddress;
             strcpy(labelList[labelListLength],labelName);
             labelListLength++;
         }
+
+        // In case of a line ending, the instruction must be on the next line
         if(state==1) {
             i++;
             continue;
         }
+
+        // Skips the space after the label
         i++;
+
+        // Parses instruction name
         while(1) {
             if(assemblyCode[i]==' ')
                 break;
@@ -430,10 +454,14 @@ void Assembler::assemble() {
             i++;
         }
         instrName[instrLength]='\0';
+
+        // In case of a line ending or end of file, we let the next while-loop handle the error
         if(state==1) {
             i++;
             continue;
         }
+
+        // Error checking
         int instrType=getInstructionType(instrName);
         if(instrType==-1) {
             if(i>=assemblyCodeLength) {
@@ -449,20 +477,31 @@ void Assembler::assemble() {
         else {
             memoryAddress+=2;
         }
+
+        // Skipping the rest of the line
         while(assemblyCode[i]!='\n' && i<assemblyCodeLength) i++;
+
+        // Skip the \n
         i++;
     }
+
+    // Error checking
     if(error)
         return;
+
+    // Back to the first character
     i=0;
     sprintf(rawAssembly,"ASM02");
+
+    // Convert assembly to machine code
     while(i<assemblyCodeLength) {
         char instrName[1024];
         int instrLength=0;
         char instrArgs[1024];
         int instrArgsLength=0;
         int state=0;
-        //parse label name
+
+        // Parses label name
         while(1) {
             if(assemblyCode[i]==' ')
                 break;
@@ -472,11 +511,17 @@ void Assembler::assemble() {
             }
             i++;
         }
+
+        // In case of a line ending, the instruction is on the next row
         if(state==1) {
             i++;
             continue;
         }
+
+        // Skip the space after the label name
         i++;
+
+        // Parses instruction name
         while(1) {
             if(assemblyCode[i]==' ')
                 break;
@@ -488,10 +533,14 @@ void Assembler::assemble() {
             i++;
         }
         instrName[instrLength]='\0';
+
+        // In case of an empty instruction, just skip the line (very weird corner case)
         if(state==1 && instrLength==0) {
             i++;
             continue;
         }
+
+        // In case of a non-empty instruction with arguments
         if(state==1) {
             if(i>=assemblyCodeLength) {
                 i=assemblyCodeLength-1;
@@ -500,6 +549,8 @@ void Assembler::assemble() {
             error=1;
             break;
         }
+
+        // Error checking
         int instrType=getInstructionType(instrName);
         if(instrType==-1) {
             if(i>=assemblyCodeLength) {
@@ -509,7 +560,11 @@ void Assembler::assemble() {
             error=1;
             break;
         }
+
+        // Skip the space after the instruction name
         i++;
+
+        // Parses instruction arguments
         while(1) {
             if(assemblyCode[i]==' ')
                 break;
@@ -521,6 +576,8 @@ void Assembler::assemble() {
             i++;
         }
         instrArgs[instrArgsLength]='\0';
+
+        // Error checking
         if(state==1 && instrArgsLength==0) {
             if(i>=assemblyCodeLength) {
                 i=assemblyCodeLength-1;
@@ -529,13 +586,21 @@ void Assembler::assemble() {
             error=1;
             break;
         }
+
+        // Tries to translate the instruction to machine code
         if(!translateInstruction(instrName,instrArgs,instrArgsLength,rawAssembly,lines[i])) {
             error=1;
             break;
         }
+
+        // Skips the rest of the line (corner cases again)
         while(assemblyCode[i]!='\n' && i<assemblyCodeLength) i++;
+
+        // Skips the new line character
         i++;
     }
+
+    // Memory management
     delete[] lines;
 }
 
