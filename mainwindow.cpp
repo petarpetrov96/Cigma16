@@ -247,6 +247,7 @@ void MainWindow::assemble() {
     QString test(rawAssembly);
     if(test.left(5).compare("ASM02")!=0) {
         ui->assemblerTextEdit->setText(test);
+        delete[] data;
         return;
     }
     test=test.right(test.length()-5);
@@ -297,6 +298,9 @@ void MainWindow::assemble() {
     // Clear the text field and sets the newly assembled text
     ui->assemblerTextEdit->clear();
     ui->assemblerTextEdit->setText(assembly);
+
+    // Memory management
+    delete[] data;
 }
 
 /*
