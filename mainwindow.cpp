@@ -2,7 +2,6 @@
 #include "ui_mainwindow.h"
 #include <QPalette>
 #include <QFileDialog>
-#include <QDebug>
 #include <string>
 
 /*

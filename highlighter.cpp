@@ -1,5 +1,4 @@
 #include "highlighter.h"
-#include <QDebug>
 
 /*
  * Constructor

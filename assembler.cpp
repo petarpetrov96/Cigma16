@@ -1,6 +1,5 @@
 #include "assembler.h"
 #include "emulator.h"
-#include <QDebug>
 
 /*
  * Constructor
