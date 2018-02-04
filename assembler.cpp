@@ -485,8 +485,10 @@ void Assembler::assemble() {
     }
 
     // Error checking
-    if(error)
+    if(error) {
+        delete[] lines;
         return;
+    }
 
     // Back to the first character
     i=0;
