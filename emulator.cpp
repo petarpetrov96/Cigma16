@@ -734,21 +734,3 @@ std::string Emulator::getSourceCode() {
     std::string returnString(sourceCode);
     return returnString;
 }
-
-/*
- * Returns an instruction list of the selected Sigma16 architecture
- */
-std::string Emulator::getInstructionList(int type) {
-    std::string returnString="";
-    if(type==1)
-        for(int i=0;i<21;i++) {
-            returnString.append(instructions017[i]);
-            returnString.append("\n");
-        }
-    else if(type==2)
-        for(int i=0;i<27;i++) {
-            returnString.append(instructions144[i]);
-            returnString.append("\n");
-        }
-    return returnString;
-}

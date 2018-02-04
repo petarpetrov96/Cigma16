@@ -33,7 +33,6 @@ public:
     std::string lastEffect;        //string holding the last effect for the emulator tab
     std::string lastType;          //string holding the last type for the emulator tab
     unsigned short lastLine;       //unsigned short holding the last source code line
-    std::string getInstructionList(int type);   //function for parsing the instruction list for the selected architecture
     bool isHalted();           //function for checking if the emulation has been halted
     std::string getOutput();       //function for returning the output for the I/O in the emulator tab
     std::string getSourceCode();   //function for returning the source code for the machine code
