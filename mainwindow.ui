@@ -565,7 +565,7 @@ p, li { white-space: pre-wrap; }
                </font>
               </property>
               <property name="text">
-               <string>Instructions List</string>
+               <string>Source Code</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignCenter</set>
@@ -573,7 +573,7 @@ p, li { white-space: pre-wrap; }
              </widget>
             </item>
             <item>
-             <widget class="QPlainTextEdit" name="instructionList">
+             <widget class="QPlainTextEdit" name="sourceCode">
               <property name="readOnly">
                <bool>true</bool>
               </property>

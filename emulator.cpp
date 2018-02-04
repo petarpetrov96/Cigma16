@@ -60,6 +60,7 @@ void Emulator::reset() {
     lastOperation="";
     lastType="";
     output="";
+    sourceCode="";
 }
 
 /*
@@ -121,7 +122,7 @@ void Emulator::loadMemory(std::string &data) {
     if(data.substr(0,5).compare("ASM03"))
         return;
 
-    // Skips the source code
+    // Fetches the source code
     unsigned int i=5;
     int sourceCodeLength=0;
     for(i=5;i<data.length();i++) {
@@ -133,6 +134,17 @@ void Emulator::loadMemory(std::string &data) {
         }
     }
     i++;
+
+    // Stores the source code to a C string
+    char* tempSourceCode = new char[sourceCodeLength+1];
+
+    for(int j=0;j<sourceCodeLength;j++) {
+        tempSourceCode[j]=data[i+j];
+    }
+    tempSourceCode[sourceCodeLength]='\0';
+
+    // Converts the C string to an std::string
+    sourceCode = std::string(tempSourceCode);
 
     i+=sourceCodeLength;
 
@@ -712,6 +724,14 @@ bool Emulator::isHalted() {
 std::string Emulator::getOutput() {
     std::string returnString(output);
     output="";
+    return returnString;
+}
+
+/*
+ * Returns the source code for the machine code
+ */
+std::string Emulator::getSourceCode() {
+    std::string returnString(sourceCode);
     return returnString;
 }
 

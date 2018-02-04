@@ -36,10 +36,12 @@ public:
     std::string getInstructionList(int type);   //function for parsing the instruction list for the selected architecture
     bool isHalted();           //function for checking if the emulation has been halted
     std::string getOutput();       //function for returning the output for the I/O in the emulator tab
+    std::string getSourceCode();   //function for returning the source code for the machine code
 
 private:
     unsigned char memory[65536][4];  //memory values representation
-    unsigned short line[65536];
+    unsigned short line[65536];      //line number representation
+    std::string sourceCode;          //source code
     std::string memoryFile;        //string holding the memory file representation in the emulator tab
     short registers[16];       //registers values representation
     bool modified;             //is the whole memory modified

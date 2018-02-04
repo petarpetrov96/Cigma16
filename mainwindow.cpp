@@ -78,9 +78,6 @@ MainWindow::MainWindow(QWidget *parent) :
     timer=new QTimer(this);
     timer->setInterval(100);
     timer->connect(timer,SIGNAL(timeout()),this,SLOT(timerRunEmulator()));
-
-    // Initializes the instruction list in Processor tab
-    ui->instructionList->setPlainText(emulator.getInstructionList(architecture).c_str());
 }
 
 /*
@@ -134,7 +131,7 @@ void MainWindow::applyTheme() {
     ui->inputOutput->setPalette(pal);
 
     // Instruction list
-    ui->instructionList->setPalette(pal);
+    ui->sourceCode->setPalette(pal);
 
     // Trace
     ui->traceTextEdit->setPalette(pal);
@@ -182,9 +179,6 @@ void MainWindow::toggleSigma() {
 
     // Resets the emulator
     resetEmulator();
-
-    // Replaces the instruction list with the new one
-    ui->instructionList->setPlainText(emulator.getInstructionList(architecture).c_str());
 }
 
 /*
@@ -397,6 +391,9 @@ void MainWindow::updateEmulator() {
     ui->emType->setText(emulator.lastType.c_str());
     ui->emEffect->setText(emulator.lastEffect.c_str());
 
+    // Updates the line number on the source code
+    ui->sourceCode->setTextCursor(QTextCursor(ui->sourceCode->document()->findBlockByLineNumber(emulator.lastLine)));
+
     // Checks for division by zero
     if(emulator.lastEffect=="DIVISION BY ZERO")
         showWarning("Division by zero detected!");
@@ -418,6 +415,10 @@ void MainWindow::resetEmulator() {
 void MainWindow::loadData() {
     std::string assembly = std::string(rawAssembly.toLocal8Bit().constData());
     emulator.loadMemory(assembly);
+
+    // Updates the source code
+    ui->sourceCode->setPlainText(QString(emulator.getSourceCode().c_str()));
+
     updateEmulator();
 }
 
