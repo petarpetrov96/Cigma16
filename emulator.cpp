@@ -34,6 +34,7 @@ void Emulator::reset() {
 
     // Resets the registers and memory
     memset(registers,0,16*sizeof(short));
+    memset(line,0,65536*sizeof(short));
     memset(memory,0,65536*4*sizeof(char));
 
     // Resets the modified tags of the memory
@@ -121,7 +122,11 @@ void Emulator::loadMemory(std::string &data) {
         return;
     int memoryPosition=0;
     for(unsigned int i=5;i<data.length();i+=4) {
+        // Source code line information
+        line[memoryPosition]=hex2dec(data[i])*4096 + hex2dec(data[i+1])*256 + hex2dec(data[i+2])*16 + hex2dec(data[i+3]);
         i+=4;
+
+        // Instruction/data
         memory[memoryPosition][0]=hex2dec(data[i]);
         memory[memoryPosition][1]=hex2dec(data[i+1]);
         memory[memoryPosition][2]=hex2dec(data[i+2]);
@@ -418,6 +423,7 @@ bool Emulator::step144() {
     char temp[50];
     bool isRX=false;
     ir=memory[pc][0]*4096+memory[pc][1]*256+memory[pc][2]*16+memory[pc][3];
+    lastLine=line[pc];
     leftAffectedBegin=pc;
     leftAffectedEnd=pc+1;
     rightAffectedBegin=0;

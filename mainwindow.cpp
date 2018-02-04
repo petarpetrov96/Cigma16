@@ -400,6 +400,10 @@ void MainWindow::updateEmulator() {
     // Checks for division by zero
     if(emulator.lastEffect=="DIVISION BY ZERO")
         showWarning("Division by zero detected!");
+
+    int currentLine = emulator.lastLine;
+    sprintf(temp,"%d",currentLine);
+    showWarning(temp);
 }
 
 /*

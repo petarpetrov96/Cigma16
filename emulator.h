@@ -32,12 +32,14 @@ public:
     std::string lastOperands;      //string holding the last operands for the emulator tab
     std::string lastEffect;        //string holding the last effect for the emulator tab
     std::string lastType;          //string holding the last type for the emulator tab
+    unsigned short lastLine;       //unsigned short holding the last source code line
     std::string getInstructionList(int type);   //function for parsing the instruction list for the selected architecture
     bool isHalted();           //function for checking if the emulation has been halted
     std::string getOutput();       //function for returning the output for the I/O in the emulator tab
 
 private:
     unsigned char memory[65536][4];  //memory values representation
+    unsigned short line[65536];
     std::string memoryFile;        //string holding the memory file representation in the emulator tab
     short registers[16];       //registers values representation
     bool modified;             //is the whole memory modified
