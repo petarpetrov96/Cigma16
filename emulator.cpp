@@ -117,13 +117,16 @@ std::string Emulator::getMemoryAddress(int address) {
  * Loads machine code in the memory file
  */
 void Emulator::loadMemory(std::string &data) {
-    if(data.substr(0,5).compare("ASM02"))
+    if(data.substr(0,5).compare("ASM03"))
         return;
+    int memoryPosition=0;
     for(unsigned int i=5;i<data.length();i+=4) {
-        memory[(i-5)/4][0]=hex2dec(data[i]);
-        memory[(i-5)/4][1]=hex2dec(data[i+1]);
-        memory[(i-5)/4][2]=hex2dec(data[i+2]);
-        memory[(i-5)/4][3]=hex2dec(data[i+3]);
+        i+=4;
+        memory[memoryPosition][0]=hex2dec(data[i]);
+        memory[memoryPosition][1]=hex2dec(data[i+1]);
+        memory[memoryPosition][2]=hex2dec(data[i+2]);
+        memory[memoryPosition][3]=hex2dec(data[i+3]);
+        memoryPosition++;
     }
     modified=true;
 }

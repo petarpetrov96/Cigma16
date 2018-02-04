@@ -83,7 +83,7 @@ int main(int argc, char* argv[]) {
 	char beginning[6];
 	memcpy(beginning,buffer,5);
 	beginning[5]='\0';
-	if(strcmp(beginning,"ASM02")) {
+	if(strcmp(beginning,"ASM03")) {
 		fprintf(stderr,"%s",buffer);
 	}
 	else {

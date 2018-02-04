@@ -243,9 +243,9 @@ void MainWindow::assemble() {
         rawAssembly=QString(assembler.readAssembly().c_str());
     }
 
-    // Remove the first five characters (ASM02)
+    // Remove the first five characters (ASM03)
     QString test(rawAssembly);
-    if(test.left(5).compare("ASM02")!=0) {
+    if(test.left(5).compare("ASM03")!=0) {
         ui->assemblerTextEdit->setText(test);
         delete[] data;
         return;
@@ -266,14 +266,19 @@ void MainWindow::assemble() {
         assembly.append(temp[3]);
         assembly.append('\t');
 
+        i+=4;
+
         // RX instruction
         if(test[i]=='f') {
+
             // First part
             assembly.append(test[i]);
             assembly.append(test[i+1]);
             assembly.append(test[i+2]);
             assembly.append(test[i+3]);
             assembly.append(' ');
+
+            i+=4;
 
             // Second part
             assembly.append(test[i+4]);

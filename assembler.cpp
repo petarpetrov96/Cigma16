@@ -308,6 +308,7 @@ bool Assembler::translateInstruction(char *instrName, char *instrArgs, int instr
             printError(result,lineError,fp);
             return false;
         }
+        sprintf(fp+strlen(fp),"%04hx",lineError);
         sprintf(fp+strlen(fp),"%c%c%c%c",getRRR(instrName),reg1,reg2,reg3);
         return true;
     }
@@ -318,6 +319,7 @@ bool Assembler::translateInstruction(char *instrName, char *instrArgs, int instr
             printError(result,lineError,fp);
             return false;
         }
+        sprintf(fp+strlen(fp),"%04hx",lineError);
         sprintf(fp+strlen(fp),"%c0%c%c",getRRR(instrName),reg1,reg2);
         return true;
     }
@@ -329,7 +331,9 @@ bool Assembler::translateInstruction(char *instrName, char *instrArgs, int instr
             printError(result,lineError,fp);
             return false;
         }
+        sprintf(fp+strlen(fp),"%04hx",lineError);
         sprintf(fp+strlen(fp),"f%c%c%c",reg1,reg2,getRX(instrName));
+        sprintf(fp+strlen(fp),"%04hx",lineError);
         sprintf(fp+strlen(fp),"%04hx",addr);
         return true;
     }
@@ -341,7 +345,9 @@ bool Assembler::translateInstruction(char *instrName, char *instrArgs, int instr
             printError(result,lineError,fp);
             return false;
         }
+        sprintf(fp+strlen(fp),"%04hx",lineError);
         sprintf(fp+strlen(fp),"f%c%c%c",getJump(instrName),reg1,getRX(instrName));
+        sprintf(fp+strlen(fp),"%04hx",lineError);
         sprintf(fp+strlen(fp),"%04hx",addr);
         return true;
     }
@@ -351,8 +357,10 @@ bool Assembler::translateInstruction(char *instrName, char *instrArgs, int instr
                 sprintf(fp,"Invalid number of arguments supplied for data - line %d!\n",lineError);
                 return false;
             }
-            else
+            else {
+                sprintf(fp+strlen(fp),"%04hx",lineError);
                 sprintf(fp+strlen(fp),"%c%c%c%c",instrArgs[1],instrArgs[2],instrArgs[3],instrArgs[4]);
+            }
         }
         else {
             int ti=0;
@@ -368,6 +376,7 @@ bool Assembler::translateInstruction(char *instrName, char *instrArgs, int instr
             if(instrArgs[0]=='-') num=-num;
             char temp[64];
             sprintf(temp,"%04hx",(short)(num));
+            sprintf(fp+strlen(fp),"%04hx",lineError);
             sprintf(fp+strlen(fp),"%c%c%c%c",temp[0],temp[1],temp[2],temp[3]);
         }
         return true;
@@ -492,7 +501,7 @@ void Assembler::assemble() {
 
     // Back to the first character
     i=0;
-    sprintf(rawAssembly,"ASM02");
+    sprintf(rawAssembly,"ASM03");
 
     // Convert assembly to machine code
     while(i<assemblyCodeLength) {
