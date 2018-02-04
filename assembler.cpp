@@ -392,6 +392,10 @@ void Assembler::assemble() {
     int i,curLine=1;
     int* lines=new int[assemblyCodeLength]; // Temporary array that keeps track of which line each character was on, used in showing errors
 
+    char* originalAssemblyCode = new char[assemblyCodeLength];
+    int originalAssemblyCodeLength = assemblyCodeLength;
+    memcpy(originalAssemblyCode,assemblyCode,originalAssemblyCodeLength*sizeof(char));
+
     // Converts the human-readable assembly to a format the machine understands better
     removeTabs(assemblyCode,assemblyCodeLength); // Replaces tabs with spaces
     removeSpaces(assemblyCode,assemblyCodeLength); // Removes all double spaces
@@ -495,13 +499,20 @@ void Assembler::assemble() {
 
     // Error checking
     if(error) {
+        delete[] originalAssemblyCode;
         delete[] lines;
         return;
     }
 
+    sprintf(rawAssembly,"ASM03");
+    sprintf(rawAssembly+strlen(rawAssembly),"%d-",originalAssemblyCodeLength);
+
+    for(i=0;i<originalAssemblyCodeLength;i++) {
+        sprintf(rawAssembly+strlen(rawAssembly),"%c",originalAssemblyCode[i]);
+    }
+
     // Back to the first character
     i=0;
-    sprintf(rawAssembly,"ASM03");
 
     // Convert assembly to machine code
     while(i<assemblyCodeLength) {
@@ -611,6 +622,7 @@ void Assembler::assemble() {
     }
 
     // Memory management
+    delete[] originalAssemblyCode;
     delete[] lines;
 }
 

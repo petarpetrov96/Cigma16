@@ -120,8 +120,24 @@ std::string Emulator::getMemoryAddress(int address) {
 void Emulator::loadMemory(std::string &data) {
     if(data.substr(0,5).compare("ASM03"))
         return;
+
+    // Skips the source code
+    unsigned int i=5;
+    int sourceCodeLength=0;
+    for(i=5;i<data.length();i++) {
+        if(isdigit(data[i])) {
+            sourceCodeLength=sourceCodeLength*10+(data[i]-'0');
+        }
+        else {
+            break;
+        }
+    }
+    i++;
+
+    i+=sourceCodeLength;
+
     int memoryPosition=0;
-    for(unsigned int i=5;i<data.length();i+=4) {
+    for(;i<data.length();i+=4) {
         // Source code line information
         line[memoryPosition]=hex2dec(data[i])*4096 + hex2dec(data[i+1])*256 + hex2dec(data[i+2])*16 + hex2dec(data[i+3]);
         i+=4;
