@@ -64,6 +64,13 @@ void Emulator::reset() {
 
     // Resets last executed line
     lastLine=0;
+
+    // Resets the comparison flags for 1.4.4
+    flagGt=false;
+    flagEq=false;
+    flagLt=false;
+    flagCo=false;
+    flagOv=false;
 }
 
 /*
