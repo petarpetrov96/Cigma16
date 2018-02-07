@@ -462,7 +462,7 @@ void Assembler::assemble() {
                 state=1;
                 break;
             }
-            instrName[instrLength++]=assemblyCode[i];
+            instrName[instrLength++]=tolower(assemblyCode[i]);
             i++;
         }
         instrName[instrLength]='\0';
@@ -550,7 +550,7 @@ void Assembler::assemble() {
                 state=1;
                 break;
             }
-            instrName[instrLength++]=assemblyCode[i];
+            instrName[instrLength++]=tolower(assemblyCode[i]);
             i++;
         }
         instrName[instrLength]='\0';
@@ -561,7 +561,7 @@ void Assembler::assemble() {
             continue;
         }
 
-        // In case of a non-empty instruction with arguments
+        // In case of a non-empty instruction with no arguments
         if(state==1) {
             if(i>=assemblyCodeLength) {
                 i=assemblyCodeLength-1;
