@@ -233,7 +233,7 @@ bool Emulator::step017() {
         sprintf(temp,"%d",memory[pc][3]);
         lastOperands.append(temp);
     }
-    // trap instruction
+    // RX instructions
     else if(memory[pc][0]==15) {
         lastOperation=instructions017[14+memory[pc][3]];
         lastType="RX";
@@ -455,17 +455,22 @@ bool Emulator::step017() {
  * Executes the next instruction using Sigma16 1.4.4
  */
 bool Emulator::step144() {
+    // Does not proceed if the emulator has been halted
     if(halted) {
         return false;
     }
     char temp[50];
     bool isRX=false;
+
+    // Calculates IR(memory contents on the address set by the program counter) and the affected memory addresses (left and the right are the two memory tables in the UI)
     ir=memory[pc][0]*4096+memory[pc][1]*256+memory[pc][2]*16+memory[pc][3];
     lastLine=line[pc];
     leftAffectedBegin=pc;
     leftAffectedEnd=pc+1;
     rightAffectedBegin=0;
     rightAffectedEnd=0;
+
+    // RRR instructions
     if(memory[pc][0]<=11) {
         lastOperation=instructions144[memory[pc][0]];
         lastType="RRR";
@@ -482,6 +487,7 @@ bool Emulator::step144() {
         sprintf(temp,"%d",memory[pc][3]);
         lastOperands.append(temp);
     }
+    // RX instructions
     else if(memory[pc][0]==15) {
         if(memory[pc][3]<=2)
             lastOperation=instructions144[12+memory[pc][3]];
@@ -491,22 +497,23 @@ bool Emulator::step144() {
             lastOperation=instructions144[26];
         lastType="RX";
     }
-    if(memory[pc][0]==0) {
+
+    if(memory[pc][0]==0) { //add
         registers[15]=0;
         registers[15]|=(1<<5);
         if((unsigned short)(registers[memory[pc][2]])>>15==1 && (unsigned short)(registers[memory[pc][3]])>>15==1)
             registers[15]|=(1<<4);
         registers[memory[pc][1]]=(unsigned short)(registers[memory[pc][2]])+(unsigned short)(registers[memory[pc][3]]);
     }
-    else if(memory[pc][0]==1) {
+    else if(memory[pc][0]==1) { // sub
         registers[15]=0;
         registers[memory[pc][1]]=(unsigned short)(registers[memory[pc][2]])-(unsigned short)(registers[memory[pc][3]]);
     }
-    else if(memory[pc][0]==2) {
+    else if(memory[pc][0]==2) { // mul
         registers[memory[pc][1]]=(unsigned short)(registers[memory[pc][2]])*(unsigned short)(registers[memory[pc][3]]);
         registers[15]=0;
     }
-    else if(memory[pc][0]==3) {
+    else if(memory[pc][0]==3) { // div
         if(registers[memory[pc][3]]!=0) {
             unsigned short rem=(unsigned short)(registers[memory[pc][2]])%(unsigned short)(registers[memory[pc][3]]);
             registers[memory[pc][1]]=(unsigned short)(registers[memory[pc][2]])/(unsigned short)(registers[memory[pc][3]]);
@@ -517,7 +524,7 @@ bool Emulator::step144() {
             halted=true;
         }
     }
-    else if(memory[pc][0]==4) {
+    else if(memory[pc][0]==4) { // cmp
         if(registers[memory[pc][2]]>registers[memory[pc][3]])
             flagGt=true;
         else
@@ -532,25 +539,25 @@ bool Emulator::step144() {
             flagLt=false;
         registers[15]=flagGt|(flagEq<<1)|(flagLt<<2)|(flagCo<<4)|(flagOv<<5);
     }
-    else if(memory[pc][0]==5) {
+    else if(memory[pc][0]==5) { // inv
         registers[memory[pc][1]]=(unsigned short)(registers[memory[pc][2]])^0b1111;
     }
-    else if(memory[pc][0]==6) {
+    else if(memory[pc][0]==6) { // and
         registers[memory[pc][1]]=(unsigned short)(registers[memory[pc][2]])&(unsigned short)(registers[memory[pc][3]]);
     }
-    else if(memory[pc][0]==7) {
+    else if(memory[pc][0]==7) { // or
         registers[memory[pc][1]]=(unsigned short)(registers[memory[pc][2]])|(unsigned short)(registers[memory[pc][3]]);
     }
-    else if(memory[pc][0]==8) {
+    else if(memory[pc][0]==8) { // xor
         registers[memory[pc][1]]=(unsigned short)(registers[memory[pc][2]])^(unsigned short)(registers[memory[pc][3]]);
     }
-    else if(memory[pc][0]==9) {
+    else if(memory[pc][0]==9) { // shiftl
         registers[memory[pc][1]]=(unsigned short)(registers[memory[pc][2]])<<(unsigned short)(registers[memory[pc][3]]);
     }
-    else if(memory[pc][0]==10) {
+    else if(memory[pc][0]==10) { // shiftr
         registers[memory[pc][1]]=(unsigned short)(registers[memory[pc][2]])>>(unsigned short)(registers[memory[pc][3]]);
     }
-    else if(memory[pc][0]==11) {
+    else if(memory[pc][0]==11) { // trap
         if(registers[memory[pc][1]]==0) {
             halted=true;
             executedInstructions++;
@@ -566,8 +573,10 @@ bool Emulator::step144() {
             lastEffect="Write";
         }
     }
-    else if(memory[pc][0]==15) {
+    else if(memory[pc][0]==15) { // RX instructions
         isRX=true;
+
+        // Calculates ADR(the memory contents representing the argument of the RX instruction)
         adr=memory[pc+1][0]*4096+memory[pc+1][1]*256+memory[pc+1][2]*16+memory[pc+1][3]+registers[memory[pc][2]];
         if(memory[pc][3]==3) {
             lastOperands="";
@@ -593,7 +602,7 @@ bool Emulator::step144() {
             lastOperands.append(temp);
             lastOperands.append("]");
         }
-        if(memory[pc][3]==0) {
+        if(memory[pc][3]==0) { // lea
             registers[memory[pc][1]]=(memory[pc+1][0]*4096+memory[pc+1][1]*256+memory[pc+1][2]*16+memory[pc+1][3])+registers[memory[pc][2]];
             lastEffect="";
             lastEffect.append("R");
@@ -604,7 +613,7 @@ bool Emulator::step144() {
             lastEffect.append(temp);
             pc+=2;
         }
-        else if(memory[pc][3]==1) {
+        else if(memory[pc][3]==1) { // load
             int addr=(memory[pc+1][0]*4096+memory[pc+1][1]*256+memory[pc+1][2]*16+memory[pc+1][3])+registers[memory[pc][2]];
             registers[memory[pc][1]]=(unsigned short)(memory[addr][0]*4096+memory[addr][1]*256+memory[addr][2]*16+memory[addr][3]);
             lastEffect="";
@@ -616,7 +625,7 @@ bool Emulator::step144() {
             lastEffect.append(temp);
             pc+=2;
         }
-        else if(memory[pc][3]==2) {
+        else if(memory[pc][3]==2) { // store
             int mem0,mem1,mem2,mem3;
             unsigned short t;
             t=registers[memory[pc][1]];
@@ -642,7 +651,7 @@ bool Emulator::step144() {
             lastEffect.append(temp);
             pc+=2;
         }
-        else if(memory[pc][3]==3) {
+        else if(memory[pc][3]==3) { // jump
             if(memory[pc][1]==0 ||
               (memory[pc][1]==1 && flagLt) ||
               (memory[pc][1]==2 && (flagLt || flagEq)) ||
@@ -681,7 +690,7 @@ bool Emulator::step144() {
                 pc+=2;
             }
         }
-        else if(memory[pc][3]==4) {
+        else if(memory[pc][3]==4) { // jal
             registers[memory[pc][1]]=pc+2;
             int addr=(memory[pc+1][0]*4096+memory[pc+1][1]*256+memory[pc+1][2]*16+memory[pc+1][3])+registers[memory[pc][2]];
             lastEffect="";
