@@ -213,6 +213,7 @@ bool Emulator::step017() {
 
     // Calculates IR(memory contents on the address set by the program counter) and the affected memory addresses (left and the right are the two memory tables in the UI)
     ir=memory[pc][0]*4096+memory[pc][1]*256+memory[pc][2]*16+memory[pc][3];
+    lastLine=line[pc];
     leftAffectedBegin=pc;
     leftAffectedEnd=pc+1;
     rightAffectedBegin=0;
