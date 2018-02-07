@@ -345,7 +345,7 @@ bool Emulator::step017() {
             pc+=2;
         }
         else if(memory[pc][3]==1) { // load
-            int addr=(memory[pc+1][0]*4096+memory[pc+1][1]*256+memory[pc+1][2]*16+memory[pc+1][3])+registers[memory[pc][2]];
+            unsigned short addr=(memory[pc+1][0]*4096+memory[pc+1][1]*256+memory[pc+1][2]*16+memory[pc+1][3])+registers[memory[pc][2]];
             registers[memory[pc][1]]=(unsigned short)(memory[addr][0]*4096+memory[addr][1]*256+memory[addr][2]*16+memory[addr][3]);
             lastEffect="";
             lastEffect.append("R");
@@ -615,7 +615,7 @@ bool Emulator::step144() {
             pc+=2;
         }
         else if(memory[pc][3]==1) { // load
-            int addr=(memory[pc+1][0]*4096+memory[pc+1][1]*256+memory[pc+1][2]*16+memory[pc+1][3])+registers[memory[pc][2]];
+            unsigned short addr=(memory[pc+1][0]*4096+memory[pc+1][1]*256+memory[pc+1][2]*16+memory[pc+1][3])+registers[memory[pc][2]];
             registers[memory[pc][1]]=(unsigned short)(memory[addr][0]*4096+memory[addr][1]*256+memory[addr][2]*16+memory[addr][3]);
             lastEffect="";
             lastEffect.append("R");
