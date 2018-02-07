@@ -246,6 +246,17 @@ void MainWindow::assemble() {
     }
     test=test.right(test.length()-5);
 
+    // Remove the source code
+    int sourceCodeLength=0;
+    int digitPosition;
+    for(digitPosition=0;digitPosition<test.length();digitPosition++) {
+        if(!isdigit(test[digitPosition].toLatin1())) {
+            break;
+        }
+        sourceCodeLength=sourceCodeLength*10+(test[digitPosition].toLatin1()-'0');
+    }
+    test=test.right(test.length()-(sourceCodeLength+digitPosition+1));
+
     // Splits the assembly into groups that can be shown on the Assembly tab
     assembly="";
     int line=0;
