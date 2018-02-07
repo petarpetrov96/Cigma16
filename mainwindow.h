@@ -57,6 +57,7 @@ private:
     Emulator emulator;     //emulator class for running the program
     QTextCharFormat blue,background;   //the basic colours used for the themes
     QTextCursor oldLeft,oldRight;      //the selection in the memory on the previous step
+    QTextCursor oldSourceCodeCursor;   //the selection in the source code on the previous step
     void updateEmulator();   //function for the updating the emulator tab
     bool running=false;      //is the program still running
     QTimer* timer;           //timer handler

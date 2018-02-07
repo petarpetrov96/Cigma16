@@ -61,6 +61,9 @@ void Emulator::reset() {
     lastType="";
     output="";
     sourceCode="";
+
+    // Resets last executed line
+    lastLine=0;
 }
 
 /*

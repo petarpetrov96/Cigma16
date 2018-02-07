@@ -151,6 +151,7 @@ void MainWindow::applyTheme() {
  */
 void MainWindow::setupEditor() {
     QTextEdit* textEdit=ui->editorTextEdit;
+    QPlainTextEdit* sourceCode=ui->sourceCode;
 
     // Courier size 10
     QFont font;
@@ -158,9 +159,11 @@ void MainWindow::setupEditor() {
     font.setFixedPitch(true);
     font.setPointSize(10);
     textEdit->setFont(font);
+    sourceCode->setFont(font);
 
     // No word wrap
     textEdit->setWordWrapMode(QTextOption::NoWrap);
+    sourceCode->setWordWrapMode(QTextOption::NoWrap);
 
     // Intializes a new highlighter
     highlighter=new Highlighter(textEdit->document());
@@ -405,6 +408,17 @@ void MainWindow::updateEmulator() {
     // Updates the line number on the source code
     ui->sourceCode->setTextCursor(QTextCursor(ui->sourceCode->document()->findBlockByLineNumber(emulator.lastLine)));
 
+    // Restores the format of the previous instruction
+    oldSourceCodeCursor.setCharFormat(background);
+
+    // Colours the current executed instruction in the source code
+    QTextBlock sourceCodeBlock(ui->sourceCode->document()->findBlockByLineNumber(emulator.lastLine-1));
+    QTextCursor sourceCodeCursor(ui->sourceCode->document());
+    sourceCodeCursor.setPosition(sourceCodeBlock.position(),QTextCursor::MoveAnchor);
+    sourceCodeCursor.setPosition(sourceCodeBlock.position()+sourceCodeBlock.length(),QTextCursor::KeepAnchor);
+    sourceCodeCursor.setCharFormat(blue);
+    oldSourceCodeCursor=sourceCodeCursor;
+
     // Checks for division by zero
     if(emulator.lastEffect=="DIVISION BY ZERO")
         showWarning("Division by zero detected!");
@@ -417,6 +431,7 @@ void MainWindow::resetEmulator() {
     emulator.reset();
     updateEmulator();
     ui->inputOutput->clear();
+    ui->sourceCode->clear();
     timer->stop();
 }
 
@@ -429,6 +444,9 @@ void MainWindow::loadData() {
 
     // Updates the source code
     ui->sourceCode->setPlainText(QString(emulator.getSourceCode().c_str()));
+    QTextCursor cursorSourceCode(ui->sourceCode->document());
+    cursorSourceCode.select(QTextCursor::Document);
+    cursorSourceCode.setCharFormat(background);
 
     updateEmulator();
 }
